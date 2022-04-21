@@ -27,7 +27,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import getCryptoLib from './getCryptoLib';
+import { subtle } from './singletons';
 import { AlgorithmName, CipherType, HashType, KeyFormat, KeyType, KeyUsageType } from './enums';
 
 const KEY_USAGE_DERIVE_KEY = 'deriveKey';
@@ -102,7 +102,7 @@ export async function keyAgreement(
     ],
   } = options;
 
-  const crypto = getCryptoLib();
+  const crypto = subtle();
   const derivedBits = await crypto.deriveBits(
     {
       name: AlgorithmName.ECDH,

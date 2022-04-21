@@ -1,11 +1,9 @@
 import { TypedArray } from '../tdf/index';
-import getCryptoLib from './getCryptoLib';
+import { subtle } from './singletons';
 
 export default function digest(
   hashType: AlgorithmIdentifier,
   data: TypedArray | ArrayBuffer
 ): Promise<ArrayBuffer> {
-  const crypto = getCryptoLib();
-
-  return crypto.digest(hashType, data);
+  return subtle().digest(hashType, data);
 }

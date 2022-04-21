@@ -1,5 +1,5 @@
 import { AlgorithmName, NamedCurve, KeyUsageType } from './enums';
-import getCryptoLib from './getCryptoLib';
+import { subtle } from './singletons';
 
 interface GenerateKeyPairOptions {
   type: AlgorithmName.ECDH | AlgorithmName.ECDSA;
@@ -16,6 +16,5 @@ export default async function generateKeyPair(
     isExtractable: true,
   }
 ): Promise<CryptoKeyPair | never> {
-  const crypto = getCryptoLib();
-  return await crypto.generateKey({ name, namedCurve }, isExtractable, keyUsages);
+  return await subtle().generateKey({ name, namedCurve }, isExtractable, keyUsages);
 }
