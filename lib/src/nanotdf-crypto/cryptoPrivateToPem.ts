@@ -28,7 +28,6 @@
  */
 
 import * as base64 from '../encodings/base64';
-import { subtle } from './singletons';
 import addNewLines from './helpers/addNewLines';
 
 const EXPORT_KEY_TYPE = 'pkcs8';
@@ -48,7 +47,7 @@ export default async function cryptoPrivateToPem(privateKey: CryptoKey): Promise
     throw new TypeError('Expected input to be a CryptoKey Object');
   }
 
-  const exportedPrivateKey = await subtle().exportKey(EXPORT_KEY_TYPE, privateKey);
+  const exportedPrivateKey = await crypto.subtle.exportKey(EXPORT_KEY_TYPE, privateKey);
   const b64 = base64.encodeArrayBuffer(exportedPrivateKey);
   const pem = addNewLines(b64); // FIXME refactor method
   return `-----BEGIN PRIVATE KEY-----\r\n${pem}-----END PRIVATE KEY-----`;

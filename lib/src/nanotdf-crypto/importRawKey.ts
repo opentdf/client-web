@@ -1,5 +1,4 @@
 import { CipherType, KeyFormat, KeyUsageType } from './enums';
-import { subtle } from './singletons';
 
 /**
  * Import raw key
@@ -16,5 +15,5 @@ export default async function importRawKey(
   keyUsages: Array<KeyUsageType>,
   isExtractable = false
 ): Promise<CryptoKey> {
-  return subtle().importKey(KeyFormat.Raw, key, CipherType.AesGcm, isExtractable, keyUsages);
+  return crypto.subtle.importKey(KeyFormat.Raw, key, CipherType.AesGcm, isExtractable, keyUsages);
 }

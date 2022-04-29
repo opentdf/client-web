@@ -1,5 +1,4 @@
 import { Ciphers, CipherTagLengths } from './ciphers';
-import { subtle } from './singletons';
 
 /**
  * Decrypt plaintext buffer to plaintext buffer
@@ -19,7 +18,7 @@ export default async function decrypt(
   iv: Uint8Array,
   tagLength?: number
 ): Promise<ArrayBuffer> {
-  return subtle().decrypt(
+  return crypto.subtle.decrypt(
     {
       name: Ciphers.AesGcm,
       iv,

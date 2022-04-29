@@ -28,7 +28,6 @@
  */
 
 import * as base64 from '../encodings/base64';
-import { subtle } from './singletons';
 import removeLines from './helpers/removeLines';
 import { importX509 } from 'jose';
 import type { KeyObject } from 'crypto';
@@ -131,7 +130,7 @@ export default async function pemPublicToCrypto(
   const keyUsages = guessKeyUsages(algorithmName, options.usages);
 
   if (algorithmName === ECDH || algorithmName === ECDSA) {
-    return subtle().importKey(
+    return crypto.subtle.importKey(
       SPKI,
       arrayBuffer,
       {
@@ -142,7 +141,7 @@ export default async function pemPublicToCrypto(
       keyUsages
     );
   } else if (algorithmName === RSA_OAEP || algorithmName === RSA_PSS) {
-    return subtle().importKey(
+    return crypto.subtle.importKey(
       SPKI,
       arrayBuffer,
       {
@@ -220,7 +219,7 @@ export async function extractPublicFromCertToCrypto(
     const subtleAlg = toSubtleAlg(hex);
     const keyUsages = guessKeyUsages(subtleAlg.name, options.usages);
     console.log({ jwsAlg, subtleAlg });
-    const subtleKey = await subtle().importKey(
+    const subtleKey = await crypto.subtle.importKey(
       'jwk',
       keyObject.export({ format: 'jwk' }),
       subtleAlg,
