@@ -2,7 +2,6 @@ import yargs from 'yargs';
 import { readFile, stat, writeFile } from 'fs/promises';
 import { hideBin } from 'yargs/helpers';
 import { AuthProviders, NanoTDFClient, version } from '@opentdf/client';
-import '@opentdf/client/node-polyfills.js';
 
 import { CLIError, Level, log } from './logger.js';
 
