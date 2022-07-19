@@ -1,13 +1,29 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { OidcProvider } from '@axa-fr/react-oidc-context';
 import App from './App.jsx';
 import './index.css';
 
-ReactDOM.render(
+const configuration = {
+  client_id: 'abacus-web',
+  redirect_uri: 'http://localhost:8080/authentication/callback',
+  // Optional activate silent-signin that use cookies between OIDC server and client javascript to restore the session
+  silent_redirect_uri: 'http://localhost:8080/authentication/silent-callback',
+  scope: 'roles profile email',
+  authority: 'http://localhost:65432/auth/realms/tdf',
+  service_worker_relative_url: '/OidcServiceWorker.js',
+  service_worker_only: true,
+};
+
+const container = document.getElementById('root');
+const root = createRoot(container);
+
+root.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+    <OidcProvider configuration={configuration}>
+      <App />
+    </OidcProvider>
+  </React.StrictMode>
 );
 
 // Hot Module Replacement (HMR) - Remove this snippet to remove HMR.
