@@ -9,3 +9,10 @@ export const isSafari = (): boolean =>
 
 // @ts-ignore
 export const isFirefox = (): boolean => typeof InstallTrigger !== 'undefined';
+
+export const rstrip = (str: string, suffix = ' '): string => {
+  while (str && suffix && str.endsWith(suffix)) {
+    str = str.slice(0, -suffix.length);
+  }
+  return str;
+};
