@@ -1,8 +1,6 @@
-name: Build, Test, and Deliver Client
-
+name: "🤖 🎨"
 on:
   pull_request:
-
 jobs:
   format:
     runs-on: ubuntu-latest
