@@ -7,17 +7,21 @@ APP="${APP_DIR}/encrypt-decrypt.sh"
 echo "whereami? $(pwd) -> $APP_DIR -> $ROOT_DIR"
 echo "whatishere"
 ls -l
+echo "whatisthere"
+( cd "$ROOT_DIR" && ls -l )
 
 _configure_app() {
   cli_version=$(cd "${ROOT_DIR}/cli" && node -p "require('./package.json').version")
 
-  if [ -f "${APP_DIR}/opentdf-cli-${cli_version}.tgz" ]; then
-    cp "opentdf-cli-${cli_version}.tgz" ./cli/
+  if [ -f "${ROOT_DIR}/opentdf-cli-${cli_version}.tgz" ]; then
+    echo "installing tgz"
+    cp "${ROOT_DIR}/opentdf-cli-${cli_version}.tgz" "${ROOT_DIR}/cli/"
     (
       cd "${APP_DIR}" || exit 1
       npm uninstall @opentdf/cli && npm ci && npm i "../../../cli/opentdf-cli-${cli_version}.tgz"
     )
   else
+    echo "npm i all by itself"
     npm i
   fi
 }
