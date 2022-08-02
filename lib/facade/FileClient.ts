@@ -4,7 +4,6 @@ import { PlaintextStream } from '../tdf3/src/client/tdf-stream';
 
 interface FileClientConfig {
   clientId: string;
-  organizationName: string;
   oidcOrigin: string;
   kasEndpoint: string;
   clientSecret?: string;
@@ -18,13 +17,11 @@ export class FileClient {
     clientId,
     clientSecret,
     oidcRefreshToken,
-    organizationName,
     oidcOrigin,
     kasEndpoint,
   }: FileClientConfig) {
     this.client = new ClientTdf3({
       clientId,
-      organizationName,
       clientSecret,
       oidcRefreshToken,
       kasEndpoint,
