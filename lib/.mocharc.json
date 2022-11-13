@@ -1,5 +1,9 @@
 {
   "extension": ["ts"],
-  "spec": ["tdf3/test/**/*.spec.+(js|ts)"],
-  "require": "tdf3/test/babel-register.js"
+  "node-option": [
+    "loader=ts-node/esm",
+    "loader=esmock"
+  ],
+  "require": "ts-node/register",
+  "spec": ["test/mocha/**/*.spec.+(js|ts)"]
 }

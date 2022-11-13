@@ -1,5 +1,9 @@
-import { createWriteStream } from 'fs';
-import { DecoratedReadableStream } from './DecoratedReadableStream';
+import { createWriteStream } from 'node:fs';
+import { type ReadableStream } from 'node:stream/web';
+import { DecoratedReadableStream } from './DecoratedReadableStream.js';
+
+type ReaderType = ReturnType<ReadableStream<Uint8Array>['getReader']>;
+type ChunkType = Awaited<ReturnType<ReaderType['read']>>;
 
 export class NodeTdfStream extends DecoratedReadableStream {
   override async toFile(filepath: string, encoding: BufferEncoding = 'utf-8'): Promise<void> {
@@ -9,7 +13,7 @@ export class NodeTdfStream extends DecoratedReadableStream {
       const pump = () =>
         reader
           .read()
-          .then((res) => {
+          .then((res: ChunkType) => {
             if (res.done) {
               file.end();
               resolve();
