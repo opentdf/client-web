@@ -52,6 +52,7 @@
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig-node-esm.json && tsc",
     "clean": "rm -rf {build,dist}",
+    "updateLink": "npm run build && sudo npm rm @opentdf/client -g && sudo npm link",
     "doc": "typedoc --out dist/docs src/index.ts",
     "format": "prettier --write \"{src,tdf3,tests}/**/*.ts\"",
     "license-check": "license-checker --production --onlyAllow 'Apache-2.0; BSD; CC-BY-4.0; ISC; MIT'",
