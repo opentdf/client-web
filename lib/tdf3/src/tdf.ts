@@ -952,59 +952,170 @@ export class TDF extends EventEmitter {
     // See: https://github.com/jherwitz/tdf3-js/blob/3ec3c8a3b8c5cecb6f6976b540d5ecde21183c8c/src/tdf.js#L739
     let encryptedOffset = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    // const that = this;
+    // ! new code starts here
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let mainBuff = Buffer.alloc(encryptedSegmentSizeDefault * 2);
+    let residue = undefined;
+
+    if (rcaParams && rcaParams.wu) {
+      const cdObj = centralDirectory.find(({ fileName }) => '0.payload' === fileName);
+      console.log('cdObj: ', cdObj);
+      if (!cdObj) {
+        throw new Error('Unable to retrieve CD');
+      }
+
+      const byteStart = cdObj.relativeOffsetOfLocalHeader + cdObj.headerLength + encryptedOffset;
+      const byteEnd = byteStart + segments.length * encryptedSegmentSizeDefault;
+
+      console.log('byteStart: ', byteStart);
+      console.log('byteEnd: ', byteEnd);
+
+      const response = await fetch(rcaParams.wu, {
+        headers: {
+          Range: `bytes=${byteStart}-${byteEnd}`,
+        },
+      });
+
+      reader = response?.body?.getReader();
+    }
 
     const underlyingSource = {
       pull: async (controller: ReadableStreamDefaultController) => {
-        if (segments.length === 0) {
-          controller.close();
-          return;
-        }
+        if (rcaParams && rcaParams.wu) {
+          console.log('running rca code');
+          if (segments.length === 0) {
+            controller.close();
+            return;
+          }
 
-        const segment = segments.shift();
-        if (!segment) {
-          throw new Error('Shifted past end of segments array');
-        }
-        if (!this.manifest) {
-          throw new Error('Missing manifest information');
-        }
-        const encryptedSegmentSize = segment.encryptedSegmentSize || encryptedSegmentSizeDefault;
-        const encryptedChunk = await zipReader.getPayloadSegment(
-          centralDirectory,
-          '0.payload',
-          encryptedOffset,
-          encryptedSegmentSize
-        );
-        encryptedOffset += encryptedSegmentSize;
+          let fill = 0;
+          let encryptedChunk = undefined as unknown as Buffer;
+          const segment = segments.shift();
+          const encryptedSegmentSize = segment?.encryptedSegmentSize || encryptedSegmentSizeDefault;
 
-        // use the segment alg type if provided, otherwise use the root sig alg
-        const segmentIntegrityAlgorithmType =
-          this.manifest.encryptionInformation.integrityInformation.segmentHashAlg;
-        const segmentHashStr = await this.getSignature(
-          reconstructedKeyBinary,
-          Binary.fromBuffer(encryptedChunk),
-          segmentIntegrityAlgorithmType || integrityAlgorithmType
-        );
+          // * build a encryptedSegmentSize chunk
+          while (true) {
+            // @ts-ignore
+            const { value: encryptedChunkPiece, done } = await reader?.read();
 
-        if (segment.hash !== base64.encode(segmentHashStr)) {
-          throw new ManifestIntegrityError('Failed integrity check on segment hash');
-        }
+            if (done) {
+              console.log('Stream end detected');
+              if (fill > 0) {
+                throw new Error('Expected no leftover data at end of stream');
+              }
+              controller.close();
+              return;
+            }
 
-        let decryptedSegment;
+            mainBuff.fill(encryptedChunkPiece, fill, fill + encryptedChunkPiece.length);
+            fill += encryptedChunkPiece.length;
+            encryptedOffset += encryptedChunkPiece.length;
 
-        try {
-          decryptedSegment = await cipher.decrypt(encryptedChunk, reconstructedKeyBinary);
-        } catch (e) {
-          throw new TdfDecryptError(
-            'Error decrypting payload. This suggests the key used to decrypt the payload is not correct.',
-            e
+            if (fill >= encryptedSegmentSize) {
+              encryptedChunk = mainBuff.subarray(0, encryptedSegmentSize);
+              residue = mainBuff.subarray(encryptedSegmentSize, fill);
+
+              if (residue?.length) {
+                fill = residue.length;
+                mainBuff.fill(residue, 0, residue.length);
+                mainBuff.fill('', residue.length);
+                residue = null;
+              } else {
+                fill = 0;
+                mainBuff.fill('');
+              }
+              console.log('Encrypted segment size: ', encryptedSegmentSize);
+              console.log('Encrypted chunk length: ', encryptedChunk.length);
+              break; // * start to process the encryptedChunk below
+            }
+          }
+
+          if (!this.manifest) {
+            throw new Error('Missing manifest information');
+          }
+
+          // use the segment alg type if provided, otherwise use the root sig alg
+          const segmentIntegrityAlgorithmType =
+            this.manifest.encryptionInformation.integrityInformation.segmentHashAlg;
+          const segmentHashStr = await this.getSignature(
+            reconstructedKeyBinary,
+            Binary.fromBuffer(encryptedChunk),
+            segmentIntegrityAlgorithmType || integrityAlgorithmType
           );
+
+          if (segment?.hash !== base64.encode(segmentHashStr)) {
+            console.log('encryptedChunk: ', encryptedChunk);
+            console.log('segment hash: ', segment?.hash);
+            console.log('segment hash string: ', segmentHashStr);
+            throw new ManifestIntegrityError('Failed integrity check on segment hash');
+          }
+
+          let decryptedSegment;
+
+          try {
+            decryptedSegment = await cipher.decrypt(encryptedChunk, reconstructedKeyBinary);
+          } catch (e) {
+            throw new TdfDecryptError(
+              'Error decrypting payload. This suggests the key used to decrypt the payload is not correct.',
+              e
+            );
+          }
+          if (progressHandler) {
+            progressHandler(encryptedOffset);
+          }
+          controller.enqueue(decryptedSegment.payload.asBuffer());
+        } else {
+          console.log('Running non rca code');
+          // ! _____________________________________________ old code below
+          if (segments.length === 0) {
+            controller.close();
+            return;
+          }
+
+          const segment = segments.shift();
+          if (!segment) {
+            throw new Error('Shifted past end of segments array');
+          }
+          if (!this.manifest) {
+            throw new Error('Missing manifest information');
+          }
+          const encryptedSegmentSize = segment.encryptedSegmentSize || encryptedSegmentSizeDefault;
+          const encryptedChunk = await zipReader.getPayloadSegment(
+            centralDirectory,
+            '0.payload',
+            encryptedOffset,
+            encryptedSegmentSize
+          );
+          encryptedOffset += encryptedSegmentSize;
+
+          // use the segment alg type if provided, otherwise use the root sig alg
+          const segmentIntegrityAlgorithmType =
+            this.manifest.encryptionInformation.integrityInformation.segmentHashAlg;
+          const segmentHashStr = await this.getSignature(
+            reconstructedKeyBinary,
+            Binary.fromBuffer(encryptedChunk),
+            segmentIntegrityAlgorithmType || integrityAlgorithmType
+          );
+
+          if (segment.hash !== base64.encode(segmentHashStr)) {
+            throw new ManifestIntegrityError('Failed integrity check on segment hash');
+          }
+
+          let decryptedSegment;
+
+          try {
+            decryptedSegment = await cipher.decrypt(encryptedChunk, reconstructedKeyBinary);
+          } catch (e) {
+            throw new TdfDecryptError(
+              'Error decrypting payload. This suggests the key used to decrypt the payload is not correct.',
+              e
+            );
+          }
+          if (progressHandler) {
+            progressHandler(encryptedOffset);
+          }
+          controller.enqueue(decryptedSegment.payload.asBuffer());
         }
-        if (progressHandler) {
-          progressHandler(encryptedOffset);
-        }
-        controller.enqueue(decryptedSegment.payload.asBuffer());
       },
     };
 
