@@ -239,7 +239,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: npmjs
-    needs: deliver-ghp
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
       || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
@@ -254,6 +253,9 @@ jobs:
       - run: >-
           .github/workflows/publish-to.sh ${{ needs.deliver-ghp.outputs.FULL_VERSION }}
           ${{ needs.deliver-ghp.outputs.DIST_TAG }}
+          npm publish --access public
+          if [[ "$GITHUB_STEP_SUMMARY" ]]; then
+            echo "### Published ${v}" >>"$GITHUB_STEP_SUMMARY"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: echo "- [Client Library](https://www.npmjs.com/package/@opentdf/client/v/${{ needs.deliver-ghp.outputs.FULL_VERSION }})">>$GITHUB_STEP_SUMMARY
