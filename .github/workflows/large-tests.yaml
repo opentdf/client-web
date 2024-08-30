@@ -11,9 +11,6 @@ on:
 jobs:
   large-file-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .github/workflows/roundtrip
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +20,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './web-app/package-lock.json'
       - run: make all && make test
-      - name: Git clone backend
-        run: |
-          git clone https://github.com/opentdf/opentdf.git
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: '1.22'
@@ -34,8 +28,11 @@ jobs:
           git clone --depth 1 https://github.com/opentdf/platform.git
           go work init
           for x in platform/{protocol/go,lib/{fixtures,ocrypto},sdk,service}; do go work use "$x"; done
+        working-directory: .github/workflows/roundtrip
       - run: docker compose up -d --wait --wait-timeout 240
+        working-directory: .github/workflows/roundtrip
       - env:
           PLAYWRIGHT_TESTS_TO_RUN: huge roundtrip
         run: |-
           ./wait-and-test.sh platform
+        working-directory: .github/workflows/roundtrip
