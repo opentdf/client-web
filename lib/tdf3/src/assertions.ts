@@ -84,11 +84,12 @@ export function isAssertionConfig(obj: unknown): obj is AssertionConfig {
   return (
     !!obj &&
     typeof obj === 'object' &&
-    'id' in obj &&
-    'type' in obj &&
-    'scope' in obj &&
-    'appliesToState' in obj &&
-    'statement' in obj
+    'id' in obj && typeof obj.id === 'string' &&
+    'type' in obj && (obj.type === 'handling' || obj.type === 'other') &&
+    'scope' in obj && (obj.scope === 'tdo' || obj.scope === 'payload') &&
+    'appliesToState' in obj && (obj.appliesToState === 'encrypted' || obj.appliesToState === 'unencrypted') &&
+    'statement' in obj && !!obj.statement && typeof obj.statement === 'object' &&
+    'format' in obj.statement && 'schema' in obj.statement && 'value' in obj.statement
   );
 }
 
