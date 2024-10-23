@@ -82,7 +82,7 @@ async function sign(
 // a function that takes an unknown or any object and asserts that it is or is not an AssertionConfig object
 export function isAssertionConfig(obj: unknown): obj is AssertionConfig {
   return (
-    !!obj && 
+    !!obj &&
     typeof obj === 'object' &&
     'id' in obj &&
     'type' in obj &&
