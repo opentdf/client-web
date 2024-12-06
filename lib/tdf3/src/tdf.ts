@@ -619,7 +619,7 @@ export async function writeStream(cfg: EncryptConfiguration): Promise<DecoratedR
   let bytesProcessed = 0;
   let crcCounter = 0;
   let fileByteCount = 0;
-  let segmentHashList:Uint8Array[] = [];
+  let segmentHashList: Uint8Array[] = [];
 
   const zipWriter = new ZipWriter();
   const manifest = await _generateManifest(
@@ -852,7 +852,7 @@ export async function writeStream(cfg: EncryptConfiguration): Promise<DecoratedR
       cfg.segmentIntegrityAlgorithm,
       cfg.cryptoService
     );
-    
+
     const payloadSig = hex.decodeArrayBuffer(payloadSigInHex);
     segmentHashList.push(new Uint8Array(payloadSig));
 
@@ -1087,8 +1087,9 @@ async function decryptChunk(
     cryptoService
   );
 
-  const segmentHash = isLegacyTDF ? btoa(segmentHashAsHex) : 
-    btoa(String.fromCharCode(...new Uint8Array(hex.decodeArrayBuffer(segmentHashAsHex))));
+  const segmentHash = isLegacyTDF
+    ? btoa(segmentHashAsHex)
+    : btoa(String.fromCharCode(...new Uint8Array(hex.decodeArrayBuffer(segmentHashAsHex))));
 
   if (hash !== segmentHash) {
     throw new IntegrityError('Failed integrity check on segment hash');
@@ -1104,7 +1105,7 @@ async function updateChunkQueue(
   cipher: SymmetricCipher,
   segmentIntegrityAlgorithm: IntegrityAlgorithm,
   cryptoService: CryptoService,
-  isLegacyTDF: boolean,
+  isLegacyTDF: boolean
 ) {
   const chunksInOneDownload = 500;
   let requests = [];
@@ -1145,7 +1146,7 @@ async function updateChunkQueue(
             slice,
             cipher,
             segmentIntegrityAlgorithm,
-            isLegacyTDF
+            isLegacyTDF,
           });
         }
       })()
@@ -1160,7 +1161,7 @@ export async function sliceAndDecrypt({
   cipher,
   cryptoService,
   segmentIntegrityAlgorithm,
-  isLegacyTDF
+  isLegacyTDF,
 }: {
   buffer: Uint8Array;
   reconstructedKeyBinary: Binary;
@@ -1187,7 +1188,7 @@ export async function sliceAndDecrypt({
         cipher,
         segmentIntegrityAlgorithm,
         cryptoService,
-        isLegacyTDF,
+        isLegacyTDF
       );
       slice[index].decryptedChunk = result;
       if (_resolve) {
@@ -1245,22 +1246,21 @@ export async function readStream(cfg: DecryptConfiguration) {
     throw new UnsupportedError(`Unsupported integrity alg [${integrityAlgorithm}]`);
   }
 
-  const payloadForSigCalculation = isLegacyTDF ? Binary.fromString(hex.encode(aggregateHash))
-   : Binary.fromString(aggregateHash); 
+  const payloadForSigCalculation = isLegacyTDF
+    ? Binary.fromString(hex.encode(aggregateHash))
+    : Binary.fromString(aggregateHash);
   const payloadSigInHex = await getSignature(
     keyForDecryption,
     payloadForSigCalculation,
     integrityAlgorithm,
-    cfg.cryptoService,
+    cfg.cryptoService
   );
 
-  const rootSig = isLegacyTDF ? base64.encode(payloadSigInHex) 
+  const rootSig = isLegacyTDF
+    ? base64.encode(payloadSigInHex)
     : base64.encodeArrayBuffer(hex.decodeArrayBuffer(payloadSigInHex));
 
-  if (
-    manifest.encryptionInformation.integrityInformation.rootSignature.sig !==
-    rootSig
-  ) {
+  if (manifest.encryptionInformation.integrityInformation.rootSignature.sig !== rootSig) {
     throw new IntegrityError('Failed integrity check on root signature');
   }
 
@@ -1320,7 +1320,7 @@ export async function readStream(cfg: DecryptConfiguration) {
     cipher,
     segmentIntegrityAlg,
     cfg.cryptoService,
-    isLegacyTDF,
+    isLegacyTDF
   );
 
   let progress = 0;
