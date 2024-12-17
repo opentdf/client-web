@@ -27,7 +27,7 @@ jobs:
           fetch-depth: ${{ !fromJSON(env.do_sonarscan) && 1 || 0 }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: './lib/package-lock.json'
       - run: npm ci
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: './cli/package-lock.json'
       - uses: actions/download-artifact@v4
@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: './web-app/package-lock.json'
       - uses: actions/download-artifact@v4
@@ -145,7 +145,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: './web-app/package-lock.json'
       - uses: actions/download-artifact@v4
@@ -200,7 +200,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: https://npm.pkg.github.com
       - name: Check version number is same between tag, library, and/or release
         id: check-version
@@ -231,15 +231,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "- [Client Library](https://github.com/opentdf/web-sdk/pkgs/npm/client)">>$GITHUB_STEP_SUMMARY
       - run: echo "- [Command Line Tool](https://github.com/opentdf/web-sdk/pkgs/npm/cli)">>$GITHUB_STEP_SUMMARY
-      - name: trigger xtest
-        run: >-
-          curl -XPOST -u "virtru-cloudnative:${{secrets.PERSONAL_ACCESS_TOKEN}}"
-          -H "Accept: application/vnd.github.everest-preview+json"
-          -H "Content-Type: application/json"
-          "https://api.github.com/repos/opentdf/backend/dispatches"
-          --data '{"event_type":"xtest","client_payload":{"version":"'${FULL_VERSION%%+*}'"}}'
-        env:
-          FULL_VERSION: ${{ steps.guess-build-metadata.outputs.FULL_VERSION }}
       - name: Publish documentation to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4.6.0
         with:
@@ -259,7 +250,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - run: make all
       - run: >-

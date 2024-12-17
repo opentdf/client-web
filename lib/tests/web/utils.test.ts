@@ -1,5 +1,4 @@
 import { expect } from '@esm-bundle/chai';
-import axios from 'axios';
 import sinon from 'sinon';
 import {
   addNewLines,
@@ -9,6 +8,32 @@ import {
   rstrip,
   validateSecureUrl,
 } from '../../src/utils.js';
+import { TdfError } from '../../src/errors.js';
+
+describe('errors', () => {
+  it('Avoids errors due to loops', () => {
+    const cause = new Error();
+    cause.message = 'my message';
+    (cause as unknown as Record<string, string>).extra = 'some_stuff';
+    cause.cause = cause;
+    try {
+      throw new TdfError('message', cause);
+    } catch (e) {
+      expect(() => {
+        throw e;
+      }).to.throw('message');
+      expect(e.cause.extra).to.be.undefined;
+      expect(e.cause.message).to.equal('my message');
+      expect(e.cause.stack).to.equal(cause.stack);
+      expect(e.cause.stack).to.equal(cause.stack);
+      expect(e.cause.cause.stack).to.equal(cause.stack);
+      expect(e.cause.cause.cause.stack).to.equal(cause.stack);
+      expect(e.cause.cause.cause.cause.stack).to.equal(cause.stack);
+      expect(e.cause.cause.cause.cause.cause.stack).to.equal(cause.stack);
+      expect(e.cause.cause.cause.cause.cause.cause).to.be.undefined;
+    }
+  });
+});
 
 describe('rstrip', () => {
   describe('default', () => {
@@ -135,10 +160,10 @@ describe('skew estimation', () => {
   });
 
   describe('estimateSkewFromHeaders', () => {
-    it('axios', async () => {
+    it('fetch', async () => {
       console.log(window.origin);
       const before = Date.now();
-      const aResponse = await axios.get(window.origin);
+      const aResponse = await fetch(window.origin);
       await new Promise((r) => setTimeout(r, 1000));
       const estimate = estimateSkewFromHeaders(aResponse.headers, before);
       expect(estimate).to.be.lessThan(3);

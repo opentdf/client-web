@@ -5,11 +5,11 @@ import { Binary } from '../binary.js';
 
 import { ConfigurationError } from '../../../src/errors.js';
 import { PemKeyPair } from '../crypto/declarations.js';
-import { EntityObject } from '../../../src/tdf/EntityObject.js';
 import { DecoratedReadableStream } from './DecoratedReadableStream.js';
-import { type Chunker } from '../utils/chunkers.js';
+import { type Chunker } from '../../../src/seekable.js';
 import { AssertionConfig, AssertionVerificationKeys } from '../assertions.js';
 import { Value } from '../../../src/policy/attributes.js';
+import { OriginAllowList } from '../../../src/access.js';
 
 export const DEFAULT_SEGMENT_SIZE: number = 1024 * 1024;
 export type Scope = {
@@ -35,27 +35,30 @@ export type SplitStep = {
 };
 
 export type EncryptParams = {
+  byteLimit?: number;
   source: ReadableStream<Uint8Array>;
   opts?: { keypair: PemKeyPair };
   autoconfigure?: boolean;
   scope?: Scope;
   metadata?: Metadata;
   keypair?: CryptoKeyPair;
-  offline?: boolean;
   windowSize?: number;
-  asHtml?: boolean;
   getPolicyId?: () => Scope['policyId'];
   mimeType?: string;
-  eo?: EntityObject;
   payloadKey?: Binary;
   keyMiddleware?: EncryptKeyMiddleware;
   splitPlan?: SplitStep[];
   streamMiddleware?: EncryptStreamMiddleware;
   assertionConfigs?: AssertionConfig[];
+  defaultKASEndpoint?: string;
+
+  // Unsupported
+  asHtml?: boolean;
+  // Unsupported
+  offline?: boolean;
 };
 
 // 'Readonly<EncryptParams>': scope, metadata, offline, windowSize, asHtml
-
 // deep copy is expensive, could be faster is Immer used, but to keep SDK work
 // stable we can just make this object readonly
 function freeze<Type>(obj: Type): Readonly<Type> {
@@ -76,9 +79,7 @@ class EncryptParamsBuilder {
         attributes: [],
       },
       keypair: undefined,
-      offline: false,
       windowSize: DEFAULT_SEGMENT_SIZE,
-      asHtml: false,
       assertionConfigs: [],
     }
   ) {
@@ -383,37 +384,24 @@ class EncryptParamsBuilder {
   }
 
   /**
-   * Whether the encrypted data should be formatted using html. This allows authorized users to
-   * double click and read using the Virtru Secure Reader, at the cost of reduced space efficiency.
-   * <br/><br/>
-   * This is enabled by default.
-   * @return {boolean} true if the encrypted data will be in html format.
+   * @deprecated This feature is not supported
    */
   hasHtmlFormat(): boolean {
-    return !!this._params.asHtml;
+    return false;
   }
 
   /**
-   * Specify that the encrypted data should be formatted using html. This allows authorized users to
-   * double click and read using the Virtru Secure Reader, at the cost of reduced space efficiency.
-   * <br/><br/>
-   * This is enabled by default.
+   * @deprecated This feature is not supported
    */
   setHtmlFormat() {
-    this._params.asHtml = true;
+    throw new ConfigurationError('HTML format is not supported');
   }
 
   /**
-   * Specify that the encrypted data should be formatted using html. This allows authorized users to
-   * double click and read using the Virtru Secure Reader, at the cost of reduced space efficiency.
-   * Returns this object for method chaining.
-   * <br/><br/>
-   * This is enabled by default.
-   * @return {EncryptParamsBuilder} - this object.
+   * @deprecated This feature is not supported
    */
   withHtmlFormat(): EncryptParamsBuilder {
-    this.setHtmlFormat();
-    return this;
+    throw new ConfigurationError('HTML format is not supported');
   }
 
   /**
@@ -514,8 +502,8 @@ export type DecryptSource =
   | { type: 'file-browser'; location: Blob };
 
 export type DecryptParams = {
-  eo?: EntityObject;
   source: DecryptSource;
+  allowList?: OriginAllowList;
   keyMiddleware?: DecryptKeyMiddleware;
   streamMiddleware?: DecryptStreamMiddleware;
   assertionVerificationKeys?: AssertionVerificationKeys;
@@ -679,6 +667,19 @@ class DecryptParamsBuilder {
   /** Skip assertion verification */
   withNoVerifyAssertions(v: boolean): DecryptParamsBuilder {
     this._params.noVerifyAssertions = v;
+    return this;
+  }
+
+  /**
+   * Sets the assertion verification keys for the decryption parameters.
+   *
+   * @param {AssertionVerificationKeys} assertionVerificationKeys - An array of assertion configurations to be set.
+   * @returns {DecryptParamsBuilder} The current instance of the EncryptParamsBuilder for method chaining.
+   */
+  withAssertionVerificationKeys(
+    assertionVerificationKeys: AssertionVerificationKeys
+  ): DecryptParamsBuilder {
+    this._params.assertionVerificationKeys = assertionVerificationKeys;
     return this;
   }
 

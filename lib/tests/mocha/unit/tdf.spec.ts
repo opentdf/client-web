@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import * as TDF from '../../../tdf3/src/tdf.js';
 import { KeyAccessObject } from '../../../tdf3/src/models/key-access.js';
 import { OriginAllowList } from '../../../src/access.js';
-import { InvalidFileError, TdfError, UnsafeUrlError } from '../../../src/errors.js';
+import { ConfigurationError, InvalidFileError, UnsafeUrlError } from '../../../src/errors.js';
 
 const sampleCert = `
 -----BEGIN CERTIFICATE-----
@@ -42,23 +42,6 @@ HJg=
 `.trim();
 
 describe('TDF', () => {
-  it('Encodes the postMessage origin properly in wrapHtml', () => {
-    const cipherText = new TextEncoder().encode('abcezas123');
-    const transferUrl = 'https://local.virtru.com/start?htmlProtocol=1';
-    const wrapped = TDF.wrapHtml(cipherText, JSON.stringify({ thisIs: 'metadata' }), transferUrl);
-    const rawHtml = new TextDecoder().decode(wrapped);
-    expect(rawHtml).to.include("'https://local.virtru.com', [channel.port2]);");
-  });
-
-  it('Round Trip wrapHtml and unwrapHtml', () => {
-    const cipherText = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
-    const transferUrl = 'https://local.virtru.com/start?htmlProtocol=1';
-    const wrapped = TDF.wrapHtml(cipherText, JSON.stringify({ thisIs: 'metadata' }), transferUrl);
-    expect(TDF.unwrapHtml(wrapped)).to.eql(cipherText);
-    expect(TDF.unwrapHtml(wrapped.buffer)).to.eql(cipherText);
-    expect(TDF.unwrapHtml(new TextDecoder().decode(wrapped))).to.eql(cipherText);
-  });
-
   it('should return key', async () => {
     const pem = await TDF.extractPemFromKeyString(sampleCert);
     expect(pem).to.include('-----BEGIN PUBLIC KEY-----');
@@ -80,7 +63,20 @@ describe('fetchKasPublicKey', async () => {
       await TDF.fetchKasPublicKey('');
       expect.fail('did not throw');
     } catch (e) {
-      expect(e).to.be.an.instanceof(TdfError);
+      expect(() => {
+        throw e;
+      }).to.throw(ConfigurationError);
+    }
+  });
+
+  it('invalid kas names throw', async () => {
+    try {
+      await TDF.fetchKasPublicKey('~~~');
+      expect.fail('did not throw');
+    } catch (e) {
+      expect(() => {
+        throw e;
+      }).to.throw(ConfigurationError);
     }
   });
 
@@ -88,6 +84,17 @@ describe('fetchKasPublicKey', async () => {
     const pk2 = await TDF.fetchKasPublicKey('http://localhost:3000');
     expect(pk2.publicKey).to.include('BEGIN CERTIFICATE');
     expect(pk2.kid).to.equal('r1');
+  });
+
+  it('invalid algorithms', async () => {
+    try {
+      await TDF.fetchKasPublicKey('http://localhost:3000', 'rsa:512' as any as 'rsa:2048'); //ts-ignore
+      expect.fail('did not throw');
+    } catch (e) {
+      expect(() => {
+        throw e;
+      }).to.throw(ConfigurationError);
+    }
   });
 });
 

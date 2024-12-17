@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { type AttributeObject } from '../../../src/tdf/index.js';
+import { type AttributeObject } from '../../../src/tdf/AttributeObject.js';
 import { EncryptParamsBuilder } from '../../../tdf3/src/client/builders.js';
 
 const aex = {
@@ -8,7 +8,7 @@ const aex = {
   pubKey: 'PUBKEY',
 };
 
-describe('EncyptParamsBuilder', () => {
+describe('EncryptParamsBuilder', () => {
   describe('setAttributes', () => {
     it('should accept valid attribute', () => {
       const paramsBuilder = new EncryptParamsBuilder();
